@@ -12,19 +12,30 @@ model Bank {
   name         String        @unique
   balance      Int
   transactions Transaction[]
+  categories   Category[]
+}
+
+enum TransactionType {
+  profitable
+  consumable
 }
 
 model Transaction {
-  id       Int        @id @default(autoincrement())
-  amount   Int
-  type     String
-  category Category[]
-  bank     Bank       @relation(fields: [bankId], references: [id])
-  bankId   Int
+  id        Int             @id @default(autoincrement())
+  amount    Int
+  type      TransactionType
+  category  Category[]
+  bank      Bank            @relation(fields: [bankId], references: [id])
+  bankId    Int
+  createdAt DateTime        @default(now())
 }
 
 model Category {
   id          Int           @id @default(autoincrement())
-  name        String        @unique
+  name        String
   transaction Transaction[]
+  bank        Bank          @relation(fields: [bankId], references: [id])
+  bankId      Int
+
+  @@unique([name, bankId])
 }
