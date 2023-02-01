@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 import { DatabaseService } from 'src/database/database.service';
 import { CategoryInputDTO } from './category.dto';
@@ -34,6 +38,10 @@ export class CategoryService {
       },
     });
 
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+
     if (category.transaction.length > 0) {
       throw new BadRequestException('Category has transaction attached');
     }
@@ -41,15 +49,31 @@ export class CategoryService {
     return this.prismaService.category.delete({ where: { id } });
   }
 
-  getOneCategory(id: number) {
-    return this.prismaService.category.findUnique({ where: { id } });
+  async getOneCategory(id: number) {
+    const category = await this.prismaService.category.findUnique({
+      where: { id },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+
+    return category;
   }
 
   getAllCategories(bankId: number) {
     return this.prismaService.category.findMany({ where: { bankId } });
   }
 
-  updateCategory(id: number, categoryInput: CategoryInputDTO) {
+  async updateCategory(id: number, categoryInput: CategoryInputDTO) {
+    const category = await this.prismaService.category.findUnique({
+      where: { id },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+
     return this.prismaService.category.update({
       where: { id },
       data: categoryInput,

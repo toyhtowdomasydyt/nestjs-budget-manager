@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { BankService } from 'src/bank/bank.service';
 import { DatabaseService } from 'src/database/database.service';
 import { StatsDTO } from './stats.dto';
@@ -62,6 +66,10 @@ export class TransactionService {
     const transaction = await this.prismaService.transaction.delete({
       where: { id },
     });
+
+    if (!transaction) {
+      throw new NotFoundException('Transaction not found');
+    }
 
     await this.bankService.calculateBalance(
       transaction.bankId,

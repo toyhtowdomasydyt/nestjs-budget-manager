@@ -1,5 +1,9 @@
 import { fetch } from 'undici';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 import { CreateBankInputDTO } from './create-bank.dto';
 import { DatabaseService } from 'src/database/database.service';
@@ -45,6 +49,10 @@ export class BankService {
       include: { transactions: true },
     });
 
+    if (!bank) {
+      throw new NotFoundException('Bank not found');
+    }
+
     if (bank.transactions.length > 0) {
       throw new BadRequestException('Bank has transactions inside');
     }
@@ -52,15 +60,27 @@ export class BankService {
     return this.prismaService.bank.delete({ where: { id } });
   }
 
-  getOneBank(id: number) {
-    return this.prismaService.bank.findUnique({ where: { id } });
+  async getOneBank(id: number) {
+    const bank = await this.prismaService.bank.findUnique({ where: { id } });
+
+    if (!bank) {
+      throw new NotFoundException('Bank not found');
+    }
+
+    return bank;
   }
 
   getAllBanks() {
     return this.prismaService.bank.findMany();
   }
 
-  updateBank(id: number, updateBankInput: UpdateBankInputDTO) {
+  async updateBank(id: number, updateBankInput: UpdateBankInputDTO) {
+    const bank = await this.prismaService.bank.findUnique({ where: { id } });
+
+    if (!bank) {
+      throw new NotFoundException('Bank not found');
+    }
+
     const webhookLinks =
       updateBankInput?.webhookLinks && updateBankInput.webhookLinks.length > 0
         ? updateBankInput.webhookLinks.map((link) => ({ link }))
@@ -79,9 +99,15 @@ export class BankService {
 
   async calculateBalance(id: number, balance: number) {
     const bank = await this.prismaService.bank.findUnique({ where: { id } });
+    const updatedBalance = bank.balance + balance;
+
+    if (updatedBalance < 0) {
+      throw new BadRequestException('Transaction amount is to large');
+    }
+
     return this.prismaService.bank.update({
       where: { id },
-      data: { balance: bank.balance + balance },
+      data: { balance: updatedBalance },
     });
   }
 
