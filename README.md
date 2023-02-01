@@ -37,7 +37,7 @@ $ npm run start:prod
 
 ```bash
 # run
-$ docker compose up
+$ docker-compose up
 ```
 
 ### Environment variables
