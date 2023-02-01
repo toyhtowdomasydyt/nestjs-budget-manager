@@ -1,3 +1,4 @@
+import { fetch } from 'undici';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 import { CreateBankInputDTO } from './create-bank.dto';
@@ -10,8 +11,19 @@ export class BankService {
 
   async createBank(bankInput: CreateBankInputDTO) {
     try {
+      const webhookLinks =
+        bankInput?.webhookLinks && bankInput.webhookLinks.length > 0
+          ? bankInput.webhookLinks.map((link) => ({ link }))
+          : [];
+
       const bank = await this.prismaService.bank.create({
-        data: bankInput,
+        data: {
+          name: bankInput.name,
+          balance: bankInput.balance,
+          webhookLinks: {
+            create: webhookLinks,
+          },
+        },
       });
 
       return bank;
@@ -49,9 +61,19 @@ export class BankService {
   }
 
   updateBank(id: number, updateBankInput: UpdateBankInputDTO) {
+    const webhookLinks =
+      updateBankInput?.webhookLinks && updateBankInput.webhookLinks.length > 0
+        ? updateBankInput.webhookLinks.map((link) => ({ link }))
+        : [];
+
     return this.prismaService.bank.update({
       where: { id },
-      data: updateBankInput,
+      data: {
+        name: updateBankInput.name,
+        webhookLinks: {
+          create: webhookLinks,
+        },
+      },
     });
   }
 
@@ -61,5 +83,20 @@ export class BankService {
       where: { id },
       data: { balance: bank.balance + balance },
     });
+  }
+
+  async callWebhook(id: number, data: string) {
+    const webhookLinks = await this.prismaService.webhookLink.findMany({
+      where: { bankId: id },
+    });
+
+    return Promise.all(
+      webhookLinks.map(({ link }) =>
+        fetch(link, {
+          method: 'POST',
+          body: data,
+        }),
+      ),
+    );
   }
 }

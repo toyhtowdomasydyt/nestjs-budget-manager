@@ -53,6 +53,7 @@ export class TransactionService {
     });
 
     await this.bankService.calculateBalance(bankId, transactionInput.amount);
+    this.bankService.callWebhook(bankId, JSON.stringify(transaction));
 
     return transaction;
   }

@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsPositive, IsString, Min } from 'class-validator';
+import {
+  IsArray,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class CreateBankInputDTO {
   @ApiProperty()
@@ -12,4 +19,10 @@ export class CreateBankInputDTO {
   @IsInt()
   @Min(0)
   balance: number;
+
+  @ApiProperty()
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  webhookLinks?: Array<string>;
 }

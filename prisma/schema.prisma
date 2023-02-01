@@ -13,6 +13,16 @@ model Bank {
   balance      Int
   transactions Transaction[]
   categories   Category[]
+  webhookLinks WebhookLink[]
+}
+
+model WebhookLink {
+  id     String @id @default(uuid())
+  link   String
+  bank   Bank   @relation(fields: [bankId], references: [id])
+  bankId Int
+
+  @@unique([link, bankId])
 }
 
 enum TransactionType {
